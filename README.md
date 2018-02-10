@@ -1,1 +1,1 @@
-# SMPT-Server
+# SMTP-Server
