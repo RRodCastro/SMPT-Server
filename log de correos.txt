@@ -1,0 +1,15 @@
+log de correos
+from, to, subject, data
+
+instalar mongodb
+iniciar mongo:
+	sudo service mongod start
+
+	shell (para verificar):
+		mongo
+		db
+		use todos
+		db.bandeja_entrada.find()
+
+parar mongo:
+	sudo service mongod stop
