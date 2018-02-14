@@ -5,19 +5,44 @@ from socket import socket, AF_INET, SOCK_STREAM
 import re
 
 
-class newEmail(Tk):
+class login(Tk):
     def __init__(self):
         Tk.__init__(self)
-        self.resizable(0, 0)
-        self.title("New Email")
-        self.config(bg="blue")
+        self.resizable(0,0)
+        self.title("Login")        
+        me = StringVar()
+        mp = StringVar()
+        Label(self, text="Account: ").grid(row = 0, column = 0, sticky=W)
+        self.my_email = Entry(self, textvariable=me, width = 25)
+        self.my_email.grid(row = 0, column = 1)
+    
+        Label(self, text="Password: ").grid(row = 1, column = 0, sticky=W)
+        self.my_pass = Entry(self, textvariable=mp, width = 25)
+        self.my_pass.grid(row = 1, column = 1)
+ 
+        self.email_button = Button(self, text="Enter", command=self.login_mail, bg="black", fg="green")
+        self.email_button.grid(row = 2, column = 1, sticky=NSEW)
+ 
+        exit = Button(self, text="Exit", command=self.quit, bg="black", fg="red")
+        exit.grid(row = 2, column = 0, sticky=NSEW)
+        
+    def login_mail(self):
+        account = self.my_email.get()
+        self.password = self.my_pass.get()
+        #TODO: Validate with account and pass
+        newEmail(account)
+        self.withdraw()
 
-        mf = StringVar()
+class newEmail(Tk):
+    def __init__(self, email_from):
+        Tk.__init__(self)
+        self.resizable(0, 0)
+        self.title("New Email") 
+        self.config(bg="blue")
+        self.mailFrom = email_from
         et = StringVar()
         es = StringVar()
-        Label(self, text="From: ").grid(row=0, column=0, sticky=W)
-        self.email_from = Entry(self, textvariable=mf, width=25)
-        self.email_from.grid(row=0, column=1, sticky=E)
+        Label(self, text="From: %s" % self.mailFrom, fg="green").grid(row=0, column=0, sticky=NSEW)
 
         Label(self, text="To:").grid(row=1, column=0, sticky=W)
         self.email_to = Entry(self, textvariable=et, width=25)
@@ -35,20 +60,20 @@ class newEmail(Tk):
             self, text="Send", command=self.sendEmail, bg="black", fg="green")
         self.email_button.grid(row=4, column=1, sticky=NSEW)
 
-        salir = Button(self, text="Exit", command=self.quit,
+        exit = Button(self, text="Exit", command=self.quit,
                        bg="black", fg="red")
-        salir.grid(row=4, column=0, sticky=NSEW)
+        exit.grid(row=4, column=0, sticky=NSEW)
 
     def sendEmail(self):
         now = datetime.datetime.now()
-        self.mailFrom = self.email_from.get()
+        #self.mailFrom = self.email_from.get()
         self.to = self.email_to.get()
         self.subject = self.email_subject.get()
         self.msg = self.email_msg.get("1.0", END)
         self.mailFrom = "mailfrom@gmail.com"
         self.to = "mailto@gmail.com"
         self.subject = "SUBJECT!"
-        
+
         regexFrom = re.compile(r"(\w+)(@)(\w+)(\.)(\w+)")
         regexTo = re.compile(r"(\w+)(@)(\w+)(\.)(\w+)+")
         print(self.mailFrom)
@@ -102,5 +127,5 @@ class newEmail(Tk):
             showerror("Error", "Mail from is not valid")
 
 
-L = newEmail()
+L = login()
 L.mainloop()
