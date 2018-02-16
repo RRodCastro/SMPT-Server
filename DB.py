@@ -1,40 +1,26 @@
-from pymongo import *
+from pymongo import MongoClient
 import pprint
 
-client = MongoClient()
-lista = []
-user = input("nombre de usuario: ")
-db = client.todos
-# db.bandeja_entrada.insert({"From": "gg", "Subject": "nada", "To": "Test"})
-# db.bandeja_entrada.insert({"From": "gg", "Subject": "ok", "To": "Test"})
-
-
-def fetch_Mail(user):
-    correos = db.bandeja_entrada.find({"To": user})
-    for i in correos:
-        a = i['From']
-        b = i['Subject']
-        c = i['Data']
-        # lista.append(i)
+class DataBase:
+    def __init__(self):
+        self.client = MongoClient()
+        self.db = self.client.todos
+    def fetch_Mail(self, user):
+        print(self.db.bandeja_entrada.find() )
+        correos = self.db.bandeja_entrada.find({"To": user})
+        for i in correos:
+            a = i['From']
+            b = i['Subject']
+            c = i['Data']
+            lista.append(i)
         print(") " + a + " | " + b + " | " + c)
-
-    # pprint.pprint(lista)
-    # return lista
+    def save_Mail(self, email_from, email_to, email_sub, email_data):
+        self.db.bandeja_entrada.insert({
+            "From": email_from, "To": email_to, "Subject": email_sub, "Data": email_data})
+        return True
 
 
 # a = fetch_Mail(user)
-
-
-def save_Mail(vFrom, vTo, vSub, vData):
-    db.bandeja_entrada.insert({
-        "From": vFrom, "To": vTo, "Subject": vSub, "Data": vData})
-    print("exito")
-
-
-def show_Mail(mailList):
-    for i in range(len(mailList)):
-        #a.append(i[0] + i[1])
-        print("hola: " + str(a[1]))
 
 
 '''
@@ -45,7 +31,6 @@ r = "ok"
 
 save_Mail(q, w, e, r)
 '''
-
-a = fetch_Mail(user)
-# pprint.pprint(a)
-# show_Mail(a)
+#db = DataBase()
+#db.fetch_Mail('mailfrom@gmail.com')
+#db.save_Mail('testfrom', 'testo', 'testsub', 'email_data')

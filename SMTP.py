@@ -3,12 +3,12 @@ import sys
 import threading
 import re
 from multiprocessing import pool
-
+from DB import DataBase
 
 class SMTPServer:
     def __init__(self, server_socket):
         self.socket = server_socket
-
+        self.host_name = "server2.com"
     def process_command(self, regex):
         recive_data = self.socket.recv(1024).decode()
         print("C: " + recive_data)
@@ -20,14 +20,13 @@ class SMTPServer:
             print("S: " + send_data)
             self.socket.send(str.encode(send_data))
             return False
-
     def proces_Helo(self):
-        self.socket.send(str.encode("220 hamburguer.edu"))
-        print("S: 220 hamburguer.edu")
-        regex_helo = re.compile(r"(HELO) ([a-zA-Z]+)[.]([a-z]+)")
+        self.socket.send(str.encode("220 " + self.host_name))
+        print("S: 220 " + self.host_name)
+        regex_helo = re.compile(r"HELO (\w+)(\.)(\w+)")
         match = self.process_command(regex_helo)
         if (match):
-            send_data = ("250 HELLO " + match.group(2) + "." +
+            send_data = ("250 HELLO " + match.group(1) + "." +
                          match.group(3) + ", pleased to meet you")
             self.socket.send(str.encode(send_data))
             print("S: " + send_data)
@@ -36,24 +35,26 @@ class SMTPServer:
             return False
 
     def proces_from(self):
-        regex_from = re.compile(r"(MAIL FROM:) <(\w+)(@)(\w+)(\.)(\w+)>")
+        regex_from = re.compile(r"MAIL FROM: <(\w+)(@)(\w+)(\.)(\w+)>")
         match = self.process_command(regex_from)
         if(match):
-            send_data = ("250 " + match.group(2) + match.group(3) +
-                         match.group(4) + match.group(5) + match.group(6) + " ... sender Ok")
+            send_data = ("250 " + match.group(1) + match.group(2) +
+                         match.group(3) + match.group(4) + match.group(5) + " ... sender Ok")
             self.socket.send(str.encode(send_data))
+            self.mail_from = match.group(1) + match.group(2) +match.group(3) + match.group(4) + match.group(5)
             print("S: " + send_data)
             return True
         else:
             return False
 
     def process_to(self):
-        regex_to = re.compile(r"(RCPT TO:) <(\w+)(@)(\w+)(\.)(\w+)>")
+        regex_to = re.compile(r"RCPT TO: <(\w+)(@)(\w+)(\.)(\w+)>")
         match = self.process_command(regex_to)
         if(match):
-            send_data = ("250 " + match.group(2) + match.group(3) + match.group(4) +
-                         match.group(5) + match.group(6) + " ... recipent Ok")
+            send_data = ("250 " + match.group(1) + match.group(2) + match.group(3) +
+                         match.group(4) + match.group(5) + " ... recipent Ok")
             self.socket.send(str.encode(send_data))
+            self.mail_to =  match.group(1) + match.group(2) + match.group(3) + match.group(4) + match.group(5)
             print("S: " + send_data)
             return True
         else:
@@ -73,6 +74,7 @@ class SMTPServer:
                 message += recive_data
             print("C: " + message)
             send_data = "250 Message accepted for delivery"
+            self.send_data = message
             self.socket.send(str.encode(send_data))
             print("S: " + send_data)
             return True
@@ -95,14 +97,17 @@ class SMTPServer:
                     if(self.process_data()):
                         if(self.process_quit()):
                             return True
-
     def handle_clients(self, serverSocket):
         while (True):
             try:
-                print("Waiting clients")
+                print("Waiting clients...")
                 connectionSocket, addr = serverSocket.accept()
                 self.socket = connectionSocket
                 self.send_and_recive()
+                database = DataBase()
+                database.save_Mail(self.mail_from, self.mail_to, 'sub' , self.send_data)
+                print(self.mail_from, self.mail_to, self.send_data )
+                
             except KeyboardInterrupt:
                 self.socket.close()
                 break
