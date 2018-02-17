@@ -5,10 +5,12 @@ import re
 from multiprocessing import pool
 from DB import DataBase
 
+
 class SMTPServer:
     def __init__(self, server_socket):
         self.socket = server_socket
-        self.host_name = "server2.com"
+        self.domain = "gmail.com"
+
     def process_command(self, regex):
         recive_data = self.socket.recv(1024).decode()
         print("C: " + recive_data)
@@ -20,9 +22,10 @@ class SMTPServer:
             print("S: " + send_data)
             self.socket.send(str.encode(send_data))
             return False
+
     def proces_Helo(self):
-        self.socket.send(str.encode("220 " + self.host_name))
-        print("S: 220 " + self.host_name)
+        self.socket.send(str.encode("220 " + self.domain))
+        print("S: 220 " + self.domain)
         regex_helo = re.compile(r"HELO (\w+)(\.)(\w+)")
         match = self.process_command(regex_helo)
         if (match):
@@ -41,7 +44,8 @@ class SMTPServer:
             send_data = ("250 " + match.group(1) + match.group(2) +
                          match.group(3) + match.group(4) + match.group(5) + " ... sender Ok")
             self.socket.send(str.encode(send_data))
-            self.mail_from = match.group(1) + match.group(2) +match.group(3) + match.group(4) + match.group(5)
+            self.mail_from = match.group(
+                1) + match.group(2) + match.group(3) + match.group(4) + match.group(5)
             print("S: " + send_data)
             return True
         else:
@@ -54,7 +58,8 @@ class SMTPServer:
             send_data = ("250 " + match.group(1) + match.group(2) + match.group(3) +
                          match.group(4) + match.group(5) + " ... recipent Ok")
             self.socket.send(str.encode(send_data))
-            self.mail_to =  match.group(1) + match.group(2) + match.group(3) + match.group(4) + match.group(5)
+            self.mail_to = match.group(
+                1) + match.group(2) + match.group(3) + match.group(4) + match.group(5)
             print("S: " + send_data)
             return True
         else:
@@ -89,14 +94,53 @@ class SMTPServer:
             self.socket.send(str.encode(send_data))
             print("S: " + send_data)
         else:
-             False
-    def send_and_recive (self):
+            False
+
+    def send_and_recive(self):
         if (self.proces_Helo()):
             if(self.proces_from()):
                 if(self.process_to()):
                     if(self.process_data()):
                         if(self.process_quit()):
                             return True
+
+    def send_mail(self, domain):
+        serverPort = 2409
+        new_socket = socket(AF_INET, SOCK_STREAM)
+        # TODO: Search domain in dns
+        new_socket.connect(('localhost', serverPort))
+        print("Sending mail to domain: " + domain)
+        data = new_socket.recv(1024).decode()
+        print("S: " + data)
+        new_socket.send(str.encode("HELO " + self.domain))
+        print("C: HELO " + self.domain)
+        data = new_socket.recv(1024).decode()
+        print("S: " + data)
+        new_socket.send(str.encode(
+            "MAIL FROM: <" + self.mail_from + ">"))
+        print("C: " + ("MAIL FROM: <" + self.mail_from + ">"))
+        data = new_socket.recv(1024).decode()
+        print("S: " + data)
+        new_socket.send(str.encode("RCPT TO: <" + self.mail_to + ">"))
+        print("C: RCPT TO: <" + self.mail_to + ">")
+        data = new_socket.recv(1024).decode()
+        print("S: " + data)
+        new_socket.send(str.encode("DATA"))
+        print("C: DATA")
+        data = new_socket.recv(1024).decode()
+        print("S:" + data)
+        message_line = self.send_data.split('\n')
+        for i in len(message_line):
+            new_socket.send(str.encode(message_line[i]))
+        new_socket.send(str.encode(".\n"))
+        data = new_socket.recv(1024).decode()
+        print("S: " + data)
+        new_socket.send(str.encode("QUIT"))
+        print("C: QUIT")
+        data = new_socket.recv(1024).decode()
+        print("S: " + data)
+        new_socket.close()
+
     def handle_clients(self, serverSocket):
         while (True):
             try:
@@ -104,13 +148,21 @@ class SMTPServer:
                 connectionSocket, addr = serverSocket.accept()
                 self.socket = connectionSocket
                 self.send_and_recive()
-                database = DataBase()
-                database.save_Mail(self.mail_from, self.mail_to, 'sub' , self.send_data)
-                print(self.mail_from, self.mail_to, self.send_data )
-                
+                domain = self.mail_to.split("@")[1].replace(">", "")
+                if(domain == self.domain):
+                    database = DataBase()
+                    database.save_Mail(
+                        self.mail_from, self.mail_to, 'sub', self.send_data)
+                else:
+                    print("sending to..." + domain)
+                    # self.send_mail(domain)
+                print("parsed message")
+                message_line = self.send_data.split('\n')
+                print(message_line)
             except KeyboardInterrupt:
                 self.socket.close()
                 break
+
 
 serverPort = 2408
 serverSocket = socket(AF_INET, SOCK_STREAM)
@@ -118,4 +170,3 @@ serverSocket.bind(('localhost', serverPort))
 serverSocket.listen(5)
 server = SMTPServer(serverSocket)
 server.handle_clients(serverSocket)
-

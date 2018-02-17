@@ -1,36 +1,25 @@
 from pymongo import MongoClient
 import pprint
 
+
 class DataBase:
     def __init__(self):
         self.client = MongoClient()
-        self.db = self.client.todos
+        self.db = self.client.smtp
+
     def fetch_Mail(self, user):
-        print(self.db.bandeja_entrada.find() )
-        correos = self.db.bandeja_entrada.find({"To": user})
+        correos = self.db.server_mails.find({"To": user}, {"_id": 0})
         for i in correos:
+            print(i)
             a = i['From']
             b = i['Subject']
             c = i['Data']
-            lista.append(i)
-        print(") " + a + " | " + b + " | " + c)
+
     def save_Mail(self, email_from, email_to, email_sub, email_data):
-        self.db.bandeja_entrada.insert({
+        self.db.server_mails.insert({
             "From": email_from, "To": email_to, "Subject": email_sub, "Data": email_data})
         return True
 
-
-# a = fetch_Mail(user)
-
-
-'''
-q = "Khaliman"
-w = "Hugo"
-e = "sss"
-r = "ok"
-
-save_Mail(q, w, e, r)
-'''
 #db = DataBase()
-#db.fetch_Mail('mailfrom@gmail.com')
+# db.fetch_Mail("mailto@gmail.com")
 #db.save_Mail('testfrom', 'testo', 'testsub', 'email_data')

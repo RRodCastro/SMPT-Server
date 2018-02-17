@@ -8,41 +8,45 @@ import re
 class login(Tk):
     def __init__(self):
         Tk.__init__(self)
-        self.resizable(0,0)
-        self.title("Login")        
+        self.resizable(0, 0)
+        self.title("Login")
         me = StringVar()
         mp = StringVar()
-        Label(self, text="Account: ").grid(row = 0, column = 0, sticky=W)
-        self.my_email = Entry(self, textvariable=me, width = 25)
-        self.my_email.grid(row = 0, column = 1)
-    
-        Label(self, text="Password: ").grid(row = 1, column = 0, sticky=W)
-        self.my_pass = Entry(self, textvariable=mp, width = 25)
-        self.my_pass.grid(row = 1, column = 1)
- 
-        self.email_button = Button(self, text="Enter", command=self.login_mail, bg="black", fg="green")
-        self.email_button.grid(row = 2, column = 1, sticky=NSEW)
- 
-        exit = Button(self, text="Exit", command=self.quit, bg="black", fg="red")
-        exit.grid(row = 2, column = 0, sticky=NSEW)
-        
+        Label(self, text="Account: ").grid(row=0, column=0, sticky=W)
+        self.my_email = Entry(self, textvariable=me, width=25)
+        self.my_email.grid(row=0, column=1)
+
+        Label(self, text="Password: ").grid(row=1, column=0, sticky=W)
+        self.my_pass = Entry(self, textvariable=mp, width=25)
+        self.my_pass.grid(row=1, column=1)
+
+        self.email_button = Button(
+            self, text="Enter", command=self.login_mail, bg="black", fg="green")
+        self.email_button.grid(row=2, column=1, sticky=NSEW)
+
+        exit = Button(self, text="Exit", command=self.quit,
+                      bg="black", fg="red")
+        exit.grid(row=2, column=0, sticky=NSEW)
+
     def login_mail(self):
         account = self.my_email.get()
         self.password = self.my_pass.get()
-        #TODO: Validate with account and pass
+        # TODO: Validate with account and pass
         newEmail(account)
         self.withdraw()
+
 
 class newEmail(Tk):
     def __init__(self, email_from):
         Tk.__init__(self)
         self.resizable(0, 0)
-        self.title("New Email") 
+        self.title("New Email")
         self.config(bg="blue")
         self.mailFrom = email_from
         et = StringVar()
         es = StringVar()
-        Label(self, text="From: %s" % self.mailFrom, fg="green").grid(row=0, column=0, sticky=NSEW)
+        Label(self, text="From: %s" % self.mailFrom,
+              fg="green").grid(row=0, column=0, sticky=NSEW)
 
         Label(self, text="To:").grid(row=1, column=0, sticky=W)
         self.email_to = Entry(self, textvariable=et, width=25)
@@ -61,7 +65,7 @@ class newEmail(Tk):
         self.email_button.grid(row=4, column=1, sticky=NSEW)
 
         exit = Button(self, text="Exit", command=self.quit,
-                       bg="black", fg="red")
+                      bg="black", fg="red")
         exit.grid(row=4, column=0, sticky=NSEW)
 
     def sendEmail(self):
