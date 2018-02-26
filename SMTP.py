@@ -129,9 +129,12 @@ class SMTPServer:
         print("C: DATA")
         data = new_socket.recv(1024).decode()
         print("S:" + data)
-        message_line = self.send_data.split('\n')
-        for i in len(message_line):
+        message_line = self.send_data.split("\n")
+        # -2 Remove "." + "\n" from message
+        for i in range(len(message_line)-2):
             new_socket.send(str.encode(message_line[i]))
+            new_socket.send(str.encode("\n"))
+            print("send... " + message_line[i])
         new_socket.send(str.encode(".\n"))
         data = new_socket.recv(1024).decode()
         print("S: " + data)
@@ -149,16 +152,14 @@ class SMTPServer:
                 self.socket = connectionSocket
                 self.send_and_recive()
                 domain = self.mail_to.split("@")[1].replace(">", "")
+                print(self.send_data)
                 if(domain == self.domain):
                     database = DataBase()
                     database.save_Mail(
-                        self.mail_from, self.mail_to, 'sub', self.send_data)
+                        self.mail_from, self.mail_to, self.send_data)
                 else:
                     print("sending to..." + domain)
-                    # self.send_mail(domain)
-                print("parsed message")
-                message_line = self.send_data.split('\n')
-                print(message_line)
+                    self.send_mail(domain)
             except KeyboardInterrupt:
                 self.socket.close()
                 break

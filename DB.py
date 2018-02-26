@@ -7,19 +7,50 @@ class DataBase:
         self.client = MongoClient()
         self.db = self.client.smtp
 
-    def fetch_Mail(self, user):
-        correos = self.db.server_mails.find({"To": user}, {"_id": 0})
-        for i in correos:
-            print(i)
-            a = i['From']
-            b = i['Subject']
-            c = i['Data']
+    def insertUser(self, user_name, password):
+        self.db.users.insert({"user_name": user_name, "password": password})
 
-    def save_Mail(self, email_from, email_to, email_sub, email_data):
+    def fetchUser(self, user_name):
+        user = self.db.users.find_one({"user_name": user_name})
+        if(user is None):
+            return False
+        else:
+            return True
+
+    def fetch_user_password(self, user_name, password):
+        user_and_pass = self.db.users.find_one(
+            {"user_name": user_name, "password": password})
+        if(user_and_pass is None):
+            return False
+        else:
+            return True
+
+    def fetch_Mail(self, user):
+        mails = self.db.server_mails.find({"To": user})
+        message_list = []
+        for i, mail in enumerate(mails):
+            message_list.append(mail)
+        return message_list
+
+    def list_mail(self, user):
+        correos = self.db.server_mails.find({"To": user})
+        message_list = []
+        for i, mail in enumerate(correos):
+            message_list.append(
+                dict(id=mail['_id'], index=i, message_len=len((mail['Data'].encode()))))
+        return message_list
+
+    def save_Mail(self, email_from, email_to, email_data):
         self.db.server_mails.insert({
-            "From": email_from, "To": email_to, "Subject": email_sub, "Data": email_data})
+            "From": email_from, "To": email_to, "Data": email_data})
         return True
 
-#db = DataBase()
-# db.fetch_Mail("mailto@gmail.com")
-#db.save_Mail('testfrom', 'testo', 'testsub', 'email_data')
+
+db = DataBase()
+# db.test_order()
+# db.fetch_order()
+# print(db.fetchUser("user3"))
+#print(db.fetch_user_password("user1", "124"))
+# db.insertUser("user1", "123")
+print(db.list_mail("mailto@gmail.com"))
+# db.save_Mail('testfrom', 'testo', 'testsub', 'email_data')
