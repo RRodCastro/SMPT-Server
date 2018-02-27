@@ -24,7 +24,7 @@ class POP3Server:
     def authorization_phase(self):
         self.socket.send("+OK POP3 server ready\n".encode())
         print("S: +OK POP3 server ready")
-        regex_user = re.compile(r"user (\w+)")
+        regex_user = re.compile(r"user (.+)")
         match = self.process_command(regex_user)
         if(match):
             self.user = match.group(1)
@@ -55,22 +55,27 @@ class POP3Server:
             return False
 
     def retr_message(self, message_list):
+
         for i in enumerate(message_list):
             regex_retr = re.compile(r"retr (\d+)")
             match = self.process_command(regex_retr)
             if (match):
-                index = (message_list[int(match.group(1))])
+                index = (message_list[int(match.group(1))-1])
                 self.socket.send(index['From'].encode())
+                print("S " + index['From'])
                 time.sleep(0.2)
                 self.socket.send(index['Data'].encode())
+                print("S " + index['Data'])
                 self.socket.send(".".encode())
+                print("S .")
+                time.sleep(0.2)
+                print(self.socket.recv(1024).decode())
 
     def transaction_phase(self):
         regex_list = re.compile(r"list")
         match = self.process_command(regex_list)
         if(match):
             message_list = (self.database.fetch_Mail("mailto@gmail.com"))
-            print(message_list)
             for i, mail in enumerate(message_list):
                 self.socket.send(
                     str(str(i) + " " + str(len((mail['Data'].encode())))).encode())
@@ -78,6 +83,7 @@ class POP3Server:
                                   str(len((mail['Data'].encode())))))
                 time.sleep(0.1)
             self.socket.send(".".encode())
+            print("S: .")
             self.retr_message(message_list)
             # C: dele 1
             # regex = ret #
@@ -90,6 +96,7 @@ class POP3Server:
                 print("Waiting clients...")
                 connectionSocket, addr = serverSocket.accept()
                 self.socket = connectionSocket
+                self.authorization_phase()
                 self.transaction_phase()
                 self.socket.close()
                 break
@@ -98,9 +105,9 @@ class POP3Server:
                 break
 
 
-serverPort = 2430
+serverPort = 8081
 serverSocket = socket(AF_INET, SOCK_STREAM)
-serverSocket.bind(('localhost', serverPort))
+serverSocket.bind(('127.0.0.1', serverPort))
 serverSocket.listen(5)
 server = POP3Server(serverSocket)
 server.handle_clients(serverSocket)

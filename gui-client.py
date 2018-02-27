@@ -4,6 +4,7 @@ import datetime
 from socket import socket, AF_INET, SOCK_STREAM
 import re
 import time
+from DB import DataBase
 
 
 class login(Tk):
@@ -22,56 +23,52 @@ class login(Tk):
         self.my_pass.grid(row=1, column=1)
 
         self.email_button = Button(
-            self, text="Enter", command=self.show_menu, bg="black", fg="green")
+            self, text="Enter", command=self.login_mail, bg="black", fg="green")
         self.email_button.grid(row=2, column=1, sticky=NSEW)
 
         exit = Button(self, text="Exit", command=self.quit,
                       bg="black", fg="red")
         exit.grid(row=2, column=0, sticky=NSEW)
-        menu(self.my_email.get())
-        self.withdraw()
 
     def login_mail(self):
         check_user = False
         check_pass = False
         account = self.my_email.get()
+        #account = "leo@gmail.com"
         self.password = self.my_pass.get()
-        serverPort = 2430
+        #self.password = "leo123"
+        serverPort = 2000
         clientServer = socket(AF_INET, SOCK_STREAM)
-        clientServer.connect(('localhost', serverPort))
-        data = clientServer.recv(1024).decode()
+        clientServer.connect(('192.168.43.17', serverPort))
+        self.clientServer = clientServer
+        data = self.clientServer.recv(1024).decode()
         print("S: " + data)
-        clientServer.send(str.encode("user " + account))
+        self.clientServer.send(str.encode("user " + account))
         print("C: user " + account)
-        data = clientServer.recv(1024).decode()
-        if (data == "+OK"):
+        data = self.clientServer.recv(1024).decode()
+        if ("+OK" in data):
             check_user = True
         print("S: " + data)
         if(check_user):
-            clientServer.send(str.encode("pass " + self.password))
-            data = clientServer.recv(1024).decode()
+            self.clientServer.send(str.encode("pass " + self.password))
+            data = self.clientServer.recv(1024).decode()
             print("S: " + data)
-            clientServer.close()
             if ("+OK" in data):
                 check_pass = True
         if (check_pass & check_user):
-            newEmail(account)
+            menu(self.my_email.get(), self.clientServer)
             self.withdraw()
         else:
             showerror("Error", "User or Password doesnt match")
 
-    def show_menu(self):
-        menu(self.my_email.get())
-        self.withdraw()
-
 
 class menu(Tk):
-    def __init__(self, account):
+    def __init__(self, account, clientServer):
         Tk.__init__(self)
         self.account = account
+        self.clientServer = clientServer
         self.title("Menu")
         self.config(bg="blue")
-
         show_inbox = Button(self, text="                 Inbox                  ",
                             command=self.show_inbox_window,
                             bg="black", fg="green")
@@ -94,48 +91,56 @@ class menu(Tk):
         self.withdraw()
 
     def show_inbox_window(self):
-        inbox(self.account)
+        inbox(self.account, self.clientServer)
         self.withdraw()
 
 
 class inbox(Tk):
-    def __init__(self, account):
+    def __init__(self, account, clientServer):
         Tk.__init__(self)
         self.title("Inbox")
         self.config(bg="blue")
+        self.clientServer = clientServer
+        self.account = account
+        self.database = DataBase()
         exit_button = Button(self, text="Exit",
                              command=self.quit,
                              bg="black", fg="red")
         exit_button.grid(row=8, column=0, columnspan=2, rowspan=2,
                          padx=5, pady=5)
         message_content = self.transaction_phase()
+        print("Transaction finished", message_content)
         for i, mail in enumerate(message_content):
             Label(self, text=mail['Data']).grid(
                 row=10+i, column=0, columnspan=2, rowspan=2,
                 padx=5, pady=5)
 
     def transaction_phase(self):
-        serverPort = 2430
-        clientServer = socket(AF_INET, SOCK_STREAM)
-        clientServer.connect(('localhost', serverPort))
-        clientServer.send("list".encode())
-        recive_data = clientServer.recv(1024).decode()
+        self.clientServer.send("list".encode())
+        print("C: " + "list")
+        recive_data = self.clientServer.recv(1024).decode()
+        print("S: " + recive_data)
         message = []
         message.append(recive_data)
         while(recive_data != '.'):
             print("S: " + recive_data)
-            recive_data = clientServer.recv(1024).decode()
+            recive_data = self.clientServer.recv(1024).decode()
             message.append(recive_data)
         print(message[0: len(message)-1])
         message_contents = []
         for i in range(len(message)-1):
             retr = "retr "
-            clientServer.send((retr + str(i)).encode())
+            self.clientServer.send((retr + str(i+1)).encode())
+            print(retr + str(i+1))
             time.sleep(0.2)
             # Recive from
-            recive_from = clientServer.recv(1024).decode()
-            recive_content = clientServer.recv(1024).decode()
-            recive_data = clientServer.recv(1024).decode()
+            recive_from = self.clientServer.recv(1024).decode()
+            recive_content = self.clientServer.recv(1024).decode()
+            recive_data = self.clientServer.recv(1024).decode()
+            print("S: ... data ...")
+            self.clientServer.send(str("dele " + str(i + 1)).encode())
+            time.sleep(0.2)
+            #self.database.insert_user_mail(self.account, mail)
             message_contents.append(
                 dict(From=recive_from, Data=recive_content))
         return message_contents
@@ -188,9 +193,9 @@ class newEmail(Tk):
         print(self.mailFrom)
         if (re.search(regexFrom, self.mailFrom)):
             if(re.search(regexTo, self.to)):
-                serverPort = 2408
+                serverPort = 2407
                 clientServer = socket(AF_INET, SOCK_STREAM)
-                clientServer.connect(('localhost', serverPort))
+                clientServer.connect(('192.168.43.17', serverPort))
 
                 data = clientServer.recv(1024).decode()
                 print("S: " + data)
@@ -216,12 +221,14 @@ class newEmail(Tk):
                 data = clientServer.recv(1024).decode()
                 print("S:" + data)
                 clientServer.send(str.encode(self.subject))
+                print("C: " + self.subject)
                 clientServer.send(str.encode('\n'))
-                clientServer.send(str.encode('\n'))
+                print("C: " + '\n')
                 clientServer.send(str.encode(self.msg))
+                print("C: " + self.msg)
                 clientServer.send(str.encode(".\n"))
+                print("C: " + ".\n")
                 data = clientServer.recv(1024).decode()
-                print("C: " + self.subject + " " + self.msg)
                 print("S: " + data)
                 clientServer.send(str.encode("QUIT"))
                 print("C: QUIT")

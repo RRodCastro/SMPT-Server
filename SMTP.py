@@ -165,9 +165,9 @@ class SMTPServer:
                 break
 
 
-serverPort = 2408
+serverPort = 8080
 serverSocket = socket(AF_INET, SOCK_STREAM)
-serverSocket.bind(('localhost', serverPort))
+serverSocket.bind(('127.0.0.1', serverPort))
 serverSocket.listen(5)
 server = SMTPServer(serverSocket)
 server.handle_clients(serverSocket)

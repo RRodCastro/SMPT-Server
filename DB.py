@@ -1,5 +1,6 @@
 from pymongo import MongoClient
 import pprint
+from bson.objectid import ObjectId
 
 
 class DataBase:
@@ -12,10 +13,14 @@ class DataBase:
 
     def fetchUser(self, user_name):
         user = self.db.users.find_one({"user_name": user_name})
+        print(user)
         if(user is None):
             return False
         else:
             return True
+
+    def insert_user_mail(self, account, mail):
+        self.db[account].insert_one(mail)
 
     def fetch_user_password(self, user_name, password):
         user_and_pass = self.db.users.find_one(
@@ -24,6 +29,9 @@ class DataBase:
             return False
         else:
             return True
+
+    def delete_mail(self, id):
+        self.db.server_mails.remove({"_id": id})
 
     def fetch_Mail(self, user):
         mails = self.db.server_mails.find({"To": user})
@@ -46,11 +54,13 @@ class DataBase:
         return True
 
 
-db = DataBase()
+#db = DataBase()
 # db.test_order()
 # db.fetch_order()
 # print(db.fetchUser("user3"))
 #print(db.fetch_user_password("user1", "124"))
-# db.insertUser("user1", "123")
-print(db.list_mail("mailto@gmail.com"))
+#db.insertUser("rcastro1@gmail.com", "123")
+# print(db.list_mail("mailto@gmail.com"))
 # db.save_Mail('testfrom', 'testo', 'testsub', 'email_data')
+# db.delete_mail(ObjectId("5a94828a36cd9841f8514ac7"))
+#db.insert_user_mail("rcastro", {"To": "test_to", "From": "test_from"})
