@@ -4,6 +4,7 @@ import threading
 import re
 from multiprocessing import pool
 from DB import DataBase
+import time
 
 
 class SMTPServer:
@@ -12,9 +13,14 @@ class SMTPServer:
         self.domain = "gmail.com"
 
     def process_command(self, regex):
-        recive_data = self.socket.recv(1024).decode()
+        recive_data = ""
+        while True:
+            data = self.socket.recv(1024).decode()
+            recive_data = recive_data + data
+            if("\r\n" in recive_data):
+                break
         print("C: " + recive_data)
-        match = re.search(regex, recive_data)
+        match = re.search(regex, recive_data.split("\r\n")[0])
         if (match):
             return match
         else:
@@ -23,14 +29,23 @@ class SMTPServer:
             self.socket.send(str.encode(send_data))
             return False
 
+    def process_message(self):
+        recive_data = ""
+        while True:
+            data = self.socket.recv(1024).decode()
+            recive_data = recive_data + data
+            if("\r\n" in recive_data):
+                break
+        return recive_data.split("\r\n")[0]
+
     def proces_Helo(self):
-        self.socket.send(str.encode("220 " + self.domain))
+        self.socket.send(str.encode("220 " + self.domain + "\r\n"))
         print("S: 220 " + self.domain)
         regex_helo = re.compile(r"HELO (\w+)(\.)(\w+)")
         match = self.process_command(regex_helo)
         if (match):
             send_data = ("250 HELLO " + match.group(1) + "." +
-                         match.group(3) + ", pleased to meet you")
+                         match.group(3) + ", pleased to meet you\r\n")
             self.socket.send(str.encode(send_data))
             print("S: " + send_data)
             return True
@@ -42,7 +57,7 @@ class SMTPServer:
         match = self.process_command(regex_from)
         if(match):
             send_data = ("250 " + match.group(1) + match.group(2) +
-                         match.group(3) + match.group(4) + match.group(5) + " ... sender Ok")
+                         match.group(3) + match.group(4) + match.group(5) + " ... sender Ok\r\n")
             self.socket.send(str.encode(send_data))
             self.mail_from = match.group(
                 1) + match.group(2) + match.group(3) + match.group(4) + match.group(5)
@@ -56,7 +71,7 @@ class SMTPServer:
         match = self.process_command(regex_to)
         if(match):
             send_data = ("250 " + match.group(1) + match.group(2) + match.group(3) +
-                         match.group(4) + match.group(5) + " ... recipent Ok")
+                         match.group(4) + match.group(5) + " ... recipent Ok\r\n")
             self.socket.send(str.encode(send_data))
             self.mail_to = match.group(
                 1) + match.group(2) + match.group(3) + match.group(4) + match.group(5)
@@ -69,16 +84,16 @@ class SMTPServer:
         regex_data = re.compile(r"(DATA)")
         match = self.process_command(regex_data)
         if (match):
-            send_data = "354 Enter mail, end with “.” on a line by itself"
+            send_data = "354 Enter mail, end with “.” on a line by itself\r\n"
             self.socket.send(str.encode(send_data))
             print("S: " + send_data)
-            recive_data = self.socket.recv(1024).decode()
+            recive_data = self.process_message()
             message = recive_data
-            while(recive_data != '.\n'):
-                recive_data = self.socket.recv(1024).decode()
-                message += recive_data
+            while(recive_data != '.'):
+                recive_data = self.process_message()
+                message += recive_data + "\n"
             print("C: " + message)
-            send_data = "250 Message accepted for delivery"
+            send_data = "250 Message accepted for delivery\r\n"
             self.send_data = message
             self.socket.send(str.encode(send_data))
             print("S: " + send_data)
@@ -90,7 +105,7 @@ class SMTPServer:
         regex_quit = re.compile(r"(QUIT)")
         match = self.process_command(regex_quit)
         if(match):
-            send_data = "221 hamburger.edu closing connection"
+            send_data = "221 hamburger.edu closing connection\r\n"
             self.socket.send(str.encode(send_data))
             print("S: " + send_data)
         else:
@@ -104,45 +119,59 @@ class SMTPServer:
                         if(self.process_quit()):
                             return True
 
+    def recive_command(self, clientServer):
+        recive_data = ""
+        while True:
+            data = clientServer.recv(1024).decode()
+            recive_data = recive_data + data
+            if("\r\n" in recive_data):
+                break
+        return recive_data
+
     def send_mail(self, domain):
         serverPort = 2409
-        new_socket = socket(AF_INET, SOCK_STREAM)
+        clientServer = socket(AF_INET, SOCK_STREAM)
         # TODO: Search domain in dns
-        new_socket.connect(('localhost', serverPort))
+        clientServer.connect(('localhost', serverPort))
         print("Sending mail to domain: " + domain)
-        data = new_socket.recv(1024).decode()
-        print("S: " + data)
-        new_socket.send(str.encode("HELO " + self.domain))
+        # RECIVE 220
+        print("S: " + self.recive_command(clientServer))
+        # SEND HELO
+        clientServer.send(str.encode("HELO " + self.domain + "\r\n"))
         print("C: HELO " + self.domain)
-        data = new_socket.recv(1024).decode()
-        print("S: " + data)
-        new_socket.send(str.encode(
+        # RECIVE 250 HELLO
+        print("S: " + self.recive_command(clientServer))
+        # SEND MAIL FROM
+        clientServer.send(str.encode(
             "MAIL FROM: <" + self.mail_from + ">"))
-        print("C: " + ("MAIL FROM: <" + self.mail_from + ">"))
-        data = new_socket.recv(1024).decode()
-        print("S: " + data)
-        new_socket.send(str.encode("RCPT TO: <" + self.mail_to + ">"))
-        print("C: RCPT TO: <" + self.mail_to + ">")
-        data = new_socket.recv(1024).decode()
-        print("S: " + data)
-        new_socket.send(str.encode("DATA"))
+        print("C: " + ("MAIL FROM: <" + self.mail_from + ">\r\n"))
+        #  RECIVE 250 ... sender ok
+        print("S: " + self.recive_command(clientServer))
+        clientServer.send(str.encode("RCPT TO: <" + self.mail_to + ">\r\n"))
+        # SEND RCPT TO:
+        print("C: RCPT TO: <" + self.mail_to + ">\r\n")
+        # RECIVE 250 ... recipent ok
+        print("S: " + self.recive_command(clientServer))
+        # SEND DATA
+        clientServer.send(str.encode("DATA\r\n"))
         print("C: DATA")
-        data = new_socket.recv(1024).decode()
-        print("S:" + data)
+        # RECIVE 354 enter mail ...
+        print("S: " + self.recive_command(clientServer))
         message_line = self.send_data.split("\n")
         # -2 Remove "." + "\n" from message
         for i in range(len(message_line)-2):
-            new_socket.send(str.encode(message_line[i]))
-            new_socket.send(str.encode("\n"))
+            clientServer.send(str.encode(message_line[i]))
+            clientServer.send(str.encode("\r\n"))
             print("send... " + message_line[i])
-        new_socket.send(str.encode(".\n"))
-        data = new_socket.recv(1024).decode()
-        print("S: " + data)
-        new_socket.send(str.encode("QUIT"))
+        clientServer.send(str.encode(".\r\n"))
+        # RECIVE 250 message accepted
+        print("S: " + self.recive_command(clientServer))
+        # SEND QUIT
+        clientServer.send(str.encode("QUIT\r\n"))
         print("C: QUIT")
-        data = new_socket.recv(1024).decode()
-        print("S: " + data)
-        new_socket.close()
+        # RECIVE 221 closing
+        print("S: " + self.recive_command(clientServer))
+        clientServer.close()
 
     def handle_clients(self, serverSocket):
         while (True):
@@ -165,7 +194,7 @@ class SMTPServer:
                 break
 
 
-serverPort = 8080
+serverPort = 8888
 serverSocket = socket(AF_INET, SOCK_STREAM)
 serverSocket.bind(('127.0.0.1', serverPort))
 serverSocket.listen(5)

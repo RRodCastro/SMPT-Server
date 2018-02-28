@@ -13,7 +13,7 @@ class DataBase:
 
     def fetchUser(self, user_name):
         user = self.db.users.find_one({"user_name": user_name})
-        print(user)
+        # print(user)
         if(user is None):
             return False
         else:
