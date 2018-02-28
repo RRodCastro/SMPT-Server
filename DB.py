@@ -13,7 +13,6 @@ class DataBase:
 
     def fetchUser(self, user_name):
         user = self.db.users.find_one({"user_name": user_name})
-        # print(user)
         if(user is None):
             return False
         else:
@@ -59,8 +58,9 @@ class DataBase:
 # db.fetch_order()
 # print(db.fetchUser("user3"))
 #print(db.fetch_user_password("user1", "124"))
-#db.insertUser("rcastro1@gmail.com", "123")
+# Insert USER: db.insertUser("rcastro1@gmail.com", "123")
 # print(db.list_mail("mailto@gmail.com"))
 # db.save_Mail('testfrom', 'testo', 'testsub', 'email_data')
 # db.delete_mail(ObjectId("5a94828a36cd9841f8514ac7"))
 #db.insert_user_mail("rcastro", {"To": "test_to", "From": "test_from"})
+#db.save_Mail("rcastro1@gmail.com", "rcastro1@gmail.com", "DATA TEST 1")

@@ -10,7 +10,7 @@ from DB import DataBase
 class login(Tk):
     def __init__(self):
         Tk.__init__(self)
-        self.resizable(0, 0)
+        self.geometry("300x300")
         self.title("Login")
         me = StringVar()
         mp = StringVar()
@@ -18,21 +18,23 @@ class login(Tk):
         clientServer = socket(AF_INET, SOCK_STREAM)
         clientServer.connect(('127.0.0.1', serverPort))
         self.clientServer = clientServer
-        Label(self, text="Account: ").grid(row=0, column=0, sticky=W)
-        self.my_email = Entry(self, textvariable=me, width=25)
-        self.my_email.grid(row=0, column=1)
+        Label(self, text="Account: ").grid(
+            row=1, column=0, sticky=W)
+        self.my_email = Entry(self, textvariable=me, width=50)
+        self.my_email.grid(row=1, column=1)
 
-        Label(self, text="Password: ").grid(row=1, column=0, sticky=W)
-        self.my_pass = Entry(self, textvariable=mp, width=25)
-        self.my_pass.grid(row=1, column=1)
+        Label(self, text="Password: ").grid(
+            row=2, column=0, sticky=W)
+        self.my_pass = Entry(self, textvariable=mp, width=50, show="*")
+        self.my_pass.grid(row=2, column=1)
 
         self.email_button = Button(
-            self, text="Enter", command=self.login_mail, bg="black", fg="green")
-        self.email_button.grid(row=2, column=1, sticky=NSEW)
+            self, text="Enter", command=self.login_mail, bg="#3a4860", fg="green")
+        self.email_button.grid(row=4, column=1, sticky=NSEW, padx=5, pady=5)
 
         exit = Button(self, text="Exit", command=self.quit,
-                      bg="black", fg="red")
-        exit.grid(row=2, column=0, sticky=NSEW)
+                      bg="#3a4860", fg="red")
+        exit.grid(row=5, column=1, sticky=NSEW, padx=5, pady=5)
 
     def recive_command(self, clientServer):
         recive_data = ""
@@ -47,9 +49,9 @@ class login(Tk):
         check_user = False
         check_pass = False
         account = self.my_email.get()
-        account = "mailto@gmail.com"
+        #account = "mailto@gmail.com"
         self.password = self.my_pass.get()
-        self.password = "123"
+        #self.password = "123"
         data = self.clientServer.recv(1024).decode()
         print("S: " + data)
         self.clientServer.send(str.encode("user " + account + "\r\n"))
@@ -134,7 +136,7 @@ class inbox(Tk):
         return recive_data
 
     def transaction_phase(self):
-        self.clientServer.send("list\r\n".encode())
+        self.clientServer.send("LIST\r\n".encode())
         recived_string = ""
 
         print("C: " + "list")
@@ -151,22 +153,22 @@ class inbox(Tk):
             if(".\r\n" in recived_string):
                 break
             message.append(recive_data)
+        print(message)
         message_contents = []
         for i in range(len(message)-1):
-            retr = "retr "
-            self.clientServer.send((retr + str(i+1) + "\r\n").encode())
-            print(retr + str(i+1))
+            retr = "RETR "
+            self.clientServer.send(str(retr + str(i+1) + "\r\n").encode())
             time.sleep(0.2)
             # Recive from
             recive_from = self.recive_command()
-            recive_content = self.recive_command()
+            #print("Recive" + recive_from)
             recive_data = self.recive_command()
-            print("S: ... data ...")
+            #print("S: ... data ...")
             #self.clientServer.send(str("dele " + str(i + 1)).encode())
             time.sleep(0.2)
             #self.database.insert_user_mail(self.account, mail)
             message_contents.append(
-                dict(From=recive_from, Data=recive_content))
+                dict(From=recive_from))
         return message_contents
 
 
@@ -209,7 +211,7 @@ class newEmail(Tk):
             recive_data = recive_data + data
             if("\r\n" in recive_data):
                 break
-        return recive_data.split
+        return recive_data
 
     def sendEmail(self):
         now = datetime.datetime.now()
@@ -227,7 +229,7 @@ class newEmail(Tk):
         print(self.mailFrom)
         if (re.search(regexFrom, self.mailFrom)):
             if(re.search(regexTo, self.to)):
-                serverPort = 2424
+                serverPort = 8080
                 clientServer = socket(AF_INET, SOCK_STREAM)
                 clientServer.connect(('127.0.0.1', serverPort))
                 # Recive 220..
@@ -239,12 +241,12 @@ class newEmail(Tk):
                 print("S: " + self.recive_command(clientServer))
                 # Send MAIL FROM
                 clientServer.send(str.encode(
-                    "MAIL FROM: <" + self.mailFrom + ">"))
+                    "MAIL FROM: <" + self.mailFrom + ">\r\n"))
                 print("C: " + ("MAIL FROM: <" + self.mailFrom + ">\r\n"))
                 # Recive 250 ... sender ok
                 print("S: " + self.recive_command(clientServer))
                 # send RCPT TO
-                clientServer.send(str.encode("RCPT TO: <" + self.to + ">"))
+                clientServer.send(str.encode("RCPT TO: <" + self.to + ">\r\n"))
                 print("C: RCPT TO: <" + self.to + ">")
                 # Recive 250 ... recipent ok
                 print("S: " + self.recive_command(clientServer))
