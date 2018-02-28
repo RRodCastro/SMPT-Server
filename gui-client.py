@@ -6,35 +6,39 @@ import re
 import time
 from DB import DataBase
 
+labelfont = ('times', 25, 'bold')
 
 class login(Tk):
     def __init__(self):
         Tk.__init__(self)
-        self.geometry("300x300")
+        self.geometry("480x200")
         self.title("Login")
+        self.config(bg="#3a4860")
         me = StringVar()
         mp = StringVar()
         serverPort = 8081
         clientServer = socket(AF_INET, SOCK_STREAM)
-        clientServer.connect(('127.0.0.1', serverPort))
+        clientServer.connect(('localhost', serverPort))
         self.clientServer = clientServer
-        Label(self, text="Account: ").grid(
-            row=1, column=0, sticky=W)
+        Label(self, text="Mail Service", bg='#3a4860', fg='#ffffff',font=labelfont).grid(
+            row=1, column=1, sticky=W+E+N+S)
+        Label(self, text="Account: ", bg='#3a4860', fg='#ffffff').grid(
+            row=2, column=0, sticky=W+E+N+S)
         self.my_email = Entry(self, textvariable=me, width=50)
-        self.my_email.grid(row=1, column=1)
+        self.my_email.grid(row=2, column=1)
 
-        Label(self, text="Password: ").grid(
-            row=2, column=0, sticky=W)
+        Label(self, text="Password: ", bg='#3a4860', fg='#ffffff').grid(
+            row=4, column=0, sticky=W+E+N+S)
         self.my_pass = Entry(self, textvariable=mp, width=50, show="*")
-        self.my_pass.grid(row=2, column=1)
+        self.my_pass.grid(row=4, column=1)
 
         self.email_button = Button(
-            self, text="Enter", command=self.login_mail, bg="#3a4860", fg="green")
-        self.email_button.grid(row=4, column=1, sticky=NSEW, padx=5, pady=5)
+            self, text="Enter", command=self.login_mail, bg="#576884", fg="#74eaf7")
+        self.email_button.grid(row=6, column=1, sticky=W+E+N+S, padx=5, pady=5)
 
         exit = Button(self, text="Exit", command=self.quit,
-                      bg="#3a4860", fg="red")
-        exit.grid(row=5, column=1, sticky=NSEW, padx=5, pady=5)
+                      bg="#576884", fg="#ef3e4a")
+        exit.grid(row=7, column=1, sticky=W+E+N+S, padx=5, pady=5)
 
     def recive_command(self, clientServer):
         recive_data = ""
@@ -79,21 +83,24 @@ class menu(Tk):
         self.account = account
         self.clientServer = clientServer
         self.title("Menu")
-        self.config(bg="blue")
-        show_inbox = Button(self, text="                 Inbox                  ",
+        self.geometry("480x200")
+        self.config(bg="#3a4860")
+        Label(self, text="Mail Service", bg='#3a4860', fg='#ffffff',font=labelfont).grid(
+            row=0, column=1, sticky=W+E+N+S)
+        show_inbox = Button(self, text="Inbox",
                             command=self.show_inbox_window,
-                            bg="black", fg="green")
-        show_inbox.grid(row=0, column=0, columnspan=2, rowspan=2,
+                            bg="#576884", fg="#74eaf7", width=53)
+        show_inbox.grid(row=1, column=0, columnspan=2, rowspan=2,
                         sticky=W+E+N+S, padx=5, pady=5)
 
-        send_mail = Button(self, text="                 Send Mail                  ",
+        send_mail = Button(self, text="Send Mail",
                            command=self.send_mail_window,
-                           bg="black", fg="green")
+                           bg="#576884", fg="#74eaf7", width=53)
         send_mail.grid(row=4, column=0, columnspan=2, rowspan=2,
                        padx=5, pady=5)
-        exit_button = Button(self, text="                 Exit                  ",
+        exit_button = Button(self, text="Exit",
                              command=self.quit,
-                             bg="black", fg="red")
+                             bg="#576884", fg="#ef3e4a", width=53)
         exit_button.grid(row=8, column=0, columnspan=2, rowspan=2,
                          padx=5, pady=5)
 
@@ -177,31 +184,35 @@ class newEmail(Tk):
         Tk.__init__(self)
         self.resizable(0, 0)
         self.title("New Email")
-        self.config(bg="blue")
+        self.geometry("480x200")
+        self.config(bg="#3a4860")
         self.mailFrom = email_from
         et = StringVar()
         es = StringVar()
         Label(self, text="From: %s" % self.mailFrom,
-              fg="green").grid(row=0, column=0,)
+              bg='#3a4860', fg='#ffffff').grid(row=0, column=0,)
 
-        Label(self, text="To:").grid(row=1, column=0, sticky=W)
-        self.email_to = Entry(self, textvariable=et, width=25)
+        Label(self, text="To:", 
+            bg='#3a4860', fg='#ffffff').grid(row=1, column=0, sticky=W)
+        self.email_to = Entry(self, textvariable=et, width=40)
         self.email_to.grid(row=1, column=1, sticky=E)
 
-        Label(self, text="Subject:").grid(row=2, column=0, sticky=W)
-        self.email_subject = Entry(self, textvariable=es, width=25)
+        Label(self, text="Subject:", 
+            bg='#3a4860', fg='#ffffff').grid(row=2, column=0, sticky=W)
+        self.email_subject = Entry(self, textvariable=es, width=40)
         self.email_subject.grid(row=2, column=1, sticky=E)
 
-        Label(self, text="Message:").grid(row=3, column=0, sticky=W)
-        self.email_msg = Text(self, width=25, height=5)
+        Label(self, text="Message:",
+         bg='#3a4860', fg='#ffffff').grid(row=3, column=0, sticky=W)
+        self.email_msg = Text(self, width=40, height=5)
         self.email_msg.grid(row=3, column=1, sticky=E)
 
         self.email_button = Button(
-            self, text="Send", command=self.sendEmail, bg="black", fg="green")
+            self, text="Send", command=self.sendEmail, bg="#576884", fg="#74eaf7")
         self.email_button.grid(row=4, column=1, sticky=NSEW)
 
-        exit = Button(self, text="Exit", command=self.quit,
-                      bg="black", fg="red")
+        exit = Button(self, text="Back", command=self.quit,
+                      bg="#576884", fg="#74eaf7")
         exit.grid(row=4, column=0, sticky=NSEW)
 
     def recive_command(self, clientServer):
@@ -231,7 +242,7 @@ class newEmail(Tk):
             if(re.search(regexTo, self.to)):
                 serverPort = 8080
                 clientServer = socket(AF_INET, SOCK_STREAM)
-                clientServer.connect(('127.0.0.1', serverPort))
+                clientServer.connect(('localhost', serverPort))
                 # Recive 220..
                 print("S: " + self.recive_command(clientServer))
                 # Send HELO
