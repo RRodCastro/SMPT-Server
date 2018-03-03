@@ -93,7 +93,7 @@ class POP3Server:
                     user = self.database.fetchUser(user_name)
         if (user):
             socket.send("+OK\r\n".encode())
-            print("C: +OK")
+            print("S: +OK")
             regex_password = re.compile(r"PASS (.+)")
             match = self.process_command(regex_password, socket)
             if(match):
@@ -112,9 +112,7 @@ class POP3Server:
             socket.send(
                 "+OK user successfully logged on\r\n".encode())
             print("+OK user successfully logged on")
-            return True
-        else:
-            return False
+            return user_name
 
     def recive_command(self, socket):
         recive_data = ""
@@ -127,44 +125,61 @@ class POP3Server:
 
     def retr_message(self, message_list, socket):
         for i in enumerate(message_list):
-            regex_retr = re.compile(r"RETR | retr (\d+)")
+            # Recive RETR # of_message
+            regex_retr = re.compile(r"RETR (\d+)")
             match = self.process_command(regex_retr, socket)
             if (match):
                 index = (message_list[int(match.group(1))-1])
-                socket.send(str(index['From'] + "\r\n").encode())
-                time.sleep(0.2)
-                socket.send(str(index['Data'] + "\r\n").encode())
+                message = str(index['From'] + "\r\n" +
+                              str(index['Data'] + "\r\n"))
+                socket.send(message.encode())
                 socket.send(".\r\n".encode())
+                print("S: \r\n")
                 print("S: .")
-                time.sleep(0.2)
+                # REcive DELE # of_message
+                regex_dele = re.compile(r"DELE (\d+)")
+                match = self.process_command(regex_dele, socket)
+                if(match):
+                    print("Deleting messages ... " + str(index))
 
-    def transaction_phase(self, socket):
-        regex_list = re.compile(r"LIST | list")
+    def transaction_phase(self, socket, user_name):
+        regex_list = re.compile(r"LIST")
         match = self.process_command(regex_list, socket)
         if(match):
-            message_list = (self.database.fetch_Mail("mailto@gmail.com"))
+            # TODO: Chnage fetch_mail(user_name)
+            message_list = (self.database.fetch_Mail(user_name))
+            # SEND:  +OK n messages size_of_messages
+            messages = "+OK " + str(len(message_list)) + \
+                " messages " + str(len(message_list) * 7) + "\r\n"
+            socket.send(messages.encode())
+            print("S: ", messages)
+            # SEND LIST of messages (message_number message_size)
             for i, mail in enumerate(message_list):
                 socket.send(
                     str(str(i+1) + " " + str(len((mail['Data'].encode()))) + "\r\n").encode())
                 print("S: " + str(str(i) + " " +
                                   str(len((mail['Data'].encode())))))
-                time.sleep(0.1)
             socket.send(".\r\n".encode())
-            print("S: .")
-            self.retr_message(message_list, socket)
-            # C: dele 1
+            print("S: .\r\n")
+            if(len(message_list) > 0):
+                self.retr_message(message_list, socket)
+                self.quit_phase(socket)
+            # nothing to retr
+            else:
+                self.quit_phase(socket)
 
     def quit_phase(self, socket):
-        regex_list = re.compile(r"quit")
+        regex_list = re.compile(r"QUIT")
         match = self.process_command(regex_list, socket)
         if(match):
             socket.send("+OK POP3 server signing off\r\n".encode())
 
     def phases(self, socket, socket_address):
-        self.authorization_phase(socket)
-        self.transaction_phase(socket)
-        self.quit_phase(socket)
+        user_name = self.authorization_phase(socket)
+        self.transaction_phase(socket, user_name)
         socket.close()
+        # Delete mail after connection is closed
+        self.database.delete_mail(user_name)
 
     def handle_clients(self, serverSocket, task):
         serverSocket.listen(5)

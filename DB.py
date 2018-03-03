@@ -29,8 +29,8 @@ class DataBase:
         else:
             return True
 
-    def delete_mail(self, id):
-        self.db.server_mails.remove({"_id": id})
+    def delete_mail(self, to):
+        self.db.server_mails.remove({"To": to})
 
     def fetch_Mail(self, user):
         mails = self.db.server_mails.find({"To": user})
@@ -63,4 +63,4 @@ class DataBase:
 # db.save_Mail('testfrom', 'testo', 'testsub', 'email_data')
 # db.delete_mail(ObjectId("5a94828a36cd9841f8514ac7"))
 #db.insert_user_mail("rcastro", {"To": "test_to", "From": "test_from"})
-#db.save_Mail("rcastro1@gmail.com", "rcastro1@gmail.com", "DATA TEST 1")
+#db.save_Mail("mailto@gmail.com", "mailto@gmail.com", "DATA TEST 3")
