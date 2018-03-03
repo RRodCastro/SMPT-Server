@@ -1,4 +1,4 @@
-from pymongo import MongoClient
+from pymongo import MongoClient, DESCENDING
 import pprint
 from bson.objectid import ObjectId
 
@@ -19,7 +19,7 @@ class DataBase:
             return True
 
     def insert_user_mail(self, account, mail):
-        self.db[account].insert_one(mail)
+        self.db[account].insert({"Data": mail})
 
     def fetch_user_password(self, user_name, password):
         user_and_pass = self.db.users.find_one(
@@ -52,15 +52,13 @@ class DataBase:
             "From": email_from, "To": email_to, "Data": email_data})
         return True
 
+    def fetch_mail_from_account(self, account):
+        mails = self.db[account].find().sort("_id", DESCENDING)
+        message_list = []
+        for i, mail in enumerate(mails):
+            message_list.append(mail)
+        return message_list
+
 
 #db = DataBase()
-# db.test_order()
-# db.fetch_order()
-# print(db.fetchUser("user3"))
-#print(db.fetch_user_password("user1", "124"))
-# Insert USER: db.insertUser("rcastro1@gmail.com", "123")
-# print(db.list_mail("mailto@gmail.com"))
-# db.save_Mail('testfrom', 'testo', 'testsub', 'email_data')
-# db.delete_mail(ObjectId("5a94828a36cd9841f8514ac7"))
-#db.insert_user_mail("rcastro", {"To": "test_to", "From": "test_from"})
-#db.save_Mail("mailto@gmail.com", "mailto@gmail.com", "DATA TEST 3")
+#db.insert_user_mail("rrgmailcom", "Data data data")

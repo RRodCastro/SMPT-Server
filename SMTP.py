@@ -60,6 +60,7 @@ class SMTPServer:
         self.smtp_port = 8080
         self.domain = "grupo01.com"
         self.host = gethostbyname(gethostname())
+        self.database = DataBase()
 
     def process_command(self, regex, socket):
         recive_data = ""
@@ -108,10 +109,10 @@ class SMTPServer:
             send_data = ("250 " + match.group(1) + match.group(2) +
                          match.group(3) + match.group(4) + match.group(5) + " ... sender Ok\r\n")
             socket.send(str.encode(send_data))
-            self.mail_from = match.group(
+            mail_from = match.group(
                 1) + match.group(2) + match.group(3) + match.group(4) + match.group(5)
             print("S: " + send_data)
-            return True
+            return True, mail_from
         else:
             return False
 
@@ -119,13 +120,12 @@ class SMTPServer:
         regex_to = re.compile(r"RCPT TO: <(\w+)(@)(\w+)(\.)(\w+)>")
         match = self.process_command(regex_to, socket)
         if(match):
-            send_data = ("250 " + match.group(1) + match.group(2) + match.group(3) +
-                         match.group(4) + match.group(5) + " ... recipent Ok\r\n")
+            mail_to = match.group(1) + match.group(2) + \
+                match.group(3) + match.group(4) + match.group(5)
+            send_data = ("250 " + mail_to + " ... recipent Ok\r\n")
             socket.send(str.encode(send_data))
-            self.mail_to = match.group(
-                1) + match.group(2) + match.group(3) + match.group(4) + match.group(5)
             print("S: " + send_data)
-            return True
+            return True, mail_to
         else:
             return False
 
@@ -146,7 +146,7 @@ class SMTPServer:
             self.send_data = message
             socket.send(str.encode(send_data))
             print("S: " + send_data)
-            return True
+            return True, message
         else:
             return False
 
@@ -161,23 +161,24 @@ class SMTPServer:
             False
 
     def send_and_recive(self, client_socket, client_address):
-        if (self.proces_Helo(client_socket)):
-            if(self.proces_from(client_socket)):
-                if(self.process_to(client_socket)):
-                    if(self.process_data(client_socket)):
-                        if(self.process_quit(client_socket)):
-                            self.handle_mail(client_socket)
+        self.proces_Helo(client_socket)
+        completed, mail_from = self.proces_from(client_socket)
+        completed, mail_to = self.process_to(client_socket)
+        completed, message = self.process_data(client_socket)
+        self.process_quit(client_socket)
+        client_socket.close()
+        self.handle_mail(client_socket, mail_from, mail_to, message)
 
-    def handle_mail(self, socket):
-        domain = self.mail_to.split("@")[1].replace(">", "")
-        print(self.send_data)
+    def handle_mail(self, socket, mail_from, mail_to, message):
+        print("Handling mail")
+        domain = mail_to.split("@")[1].replace(">", "")
         if(domain == self.domain):
             database = DataBase()
             database.save_Mail(
-                self.mail_from, self.mail_to, self.send_data)
+                mail_from, mail_to, message)
         else:
             print("sending to..." + domain)
-            self.send_mail(domain)
+            self.send_mail(domain, mail_from, mail_to, message)
 
     def recive_command(self, clientServer):
         recive_data = ""
@@ -188,7 +189,7 @@ class SMTPServer:
                 break
         return recive_data
 
-    def send_mail(self, domain):
+    def send_mail(self, domain, mail_to, mail_from, message):
         serverPort = 2409
         clientServer = socket(AF_INET, SOCK_STREAM)
         # TODO: Search domain in dns
@@ -203,13 +204,13 @@ class SMTPServer:
         print("S: " + self.recive_command(clientServer))
         # SEND MAIL FROM
         clientServer.send(str.encode(
-            "MAIL FROM: <" + self.mail_from + ">"))
-        print("C: " + ("MAIL FROM: <" + self.mail_from + ">\r\n"))
+            "MAIL FROM: <" + mail_from + ">"))
+        print("C: " + ("MAIL FROM: <" + mail_from + ">\r\n"))
         #  RECIVE 250 ... sender ok
         print("S: " + self.recive_command(clientServer))
-        clientServer.send(str.encode("RCPT TO: <" + self.mail_to + ">\r\n"))
+        clientServer.send(str.encode("RCPT TO: <" + mail_to + ">\r\n"))
         # SEND RCPT TO:
-        print("C: RCPT TO: <" + self.mail_to + ">\r\n")
+        print("C: RCPT TO: <" + mail_to + ">\r\n")
         # RECIVE 250 ... recipent ok
         print("S: " + self.recive_command(clientServer))
         # SEND DATA

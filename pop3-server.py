@@ -130,12 +130,12 @@ class POP3Server:
             match = self.process_command(regex_retr, socket)
             if (match):
                 index = (message_list[int(match.group(1))-1])
-                message = str(index['From'] + "\r\n" +
+                message = str(index['From'] + "\n\n" +
                               str(index['Data'] + "\r\n"))
                 socket.send(message.encode())
+                print("S: " + message)
                 socket.send(".\r\n".encode())
-                print("S: \r\n")
-                print("S: .")
+                print("S: .\r\n")
                 # REcive DELE # of_message
                 regex_dele = re.compile(r"DELE (\d+)")
                 match = self.process_command(regex_dele, socket)
@@ -146,7 +146,6 @@ class POP3Server:
         regex_list = re.compile(r"LIST")
         match = self.process_command(regex_list, socket)
         if(match):
-            # TODO: Chnage fetch_mail(user_name)
             message_list = (self.database.fetch_Mail(user_name))
             # SEND:  +OK n messages size_of_messages
             messages = "+OK " + str(len(message_list)) + \
@@ -159,6 +158,7 @@ class POP3Server:
                     str(str(i+1) + " " + str(len((mail['Data'].encode()))) + "\r\n").encode())
                 print("S: " + str(str(i) + " " +
                                   str(len((mail['Data'].encode())))))
+                time.sleep(0)
             socket.send(".\r\n".encode())
             print("S: .\r\n")
             if(len(message_list) > 0):
@@ -179,7 +179,7 @@ class POP3Server:
         self.transaction_phase(socket, user_name)
         socket.close()
         # Delete mail after connection is closed
-        self.database.delete_mail(user_name)
+        # self.database.delete_mail(user_name)
 
     def handle_clients(self, serverSocket, task):
         serverSocket.listen(5)
